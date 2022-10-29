@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="jquery.js"></script>
+    <script src="sockjs.js"></script>
+    <script src="stomp.js"></script>
+</head>
+<body>
+服务器定时给所有客户端推送消息：
+<div id="msg"></div>
+</body>
+<script>
+    // 获取websocket对象，通过socketjs
+    var sock = new SockJS("http://localhost:8080/socket"); // 服务器端 endpoint
+    console.log(sock);
+    // WebSocket(SockJs)类似于底层协议（类比tcp)，而STOMP类似于应用层协议(类比http)，为传输的消息添加语义
+    var stompClient = Stomp.over(sock);
+    // 应用层协议stomp提供了一些更加简洁明了的应用层API
+    // stomp客户端底层基于websocket协议传输数据
+    stompClient.connect({},function (data) {
+        // stomp协议 支持发布订阅模型，客户端需要订阅某个主题
+        // 原生的websocket是没有这个的，因为websocket是数据传输协议，而stomp是应用层协议
+        // 订阅 topic : /server/sendMessageByServer 这个不是ur，而是topic name
+        stompClient.subscribe("/server/sendMessageByServer",function (response) {
+            console.log(response.body);
+            $("#msg").html(response.body)
+        })
+    })
+</script>
+</html>

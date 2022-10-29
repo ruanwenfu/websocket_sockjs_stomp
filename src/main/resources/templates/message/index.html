@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="/jquery.js"></script>
+    <script src="/sockjs.js"></script>
+    <script src="/stomp.js"></script>
+</head>
+<body>
+聊天室：
+当前用户id是: ${id}}
+<div id="msg">
+
+</div>
+<textarea id="content"></textarea><br/>
+接收人id:
+<select id="userId">
+    <option value="">全部</option>
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+</select>
+<input type="button" id="send" value="发送"/>
+以下是我接收到的消息：<br/>
+<div id="getMessage">
+
+</div>
+</body>
+<script>
+    // 获取websocket对象，通过socketjs
+    var sock = new SockJS("http://localhost:8080/socket"); // 服务器端 endpoint
+    console.log(sock);
+    // WebSocket(SockJs)类似于底层协议（类比tcp)，而STOMP类似于应用层协议(类比http)，为传输的消息添加语义
+    var stompClient = Stomp.over(sock);
+    var id = '${id}';   // 当前用户id
+    // 应用层协议stomp提供了一些更加简洁明了的应用层API
+    // stomp客户端底层基于websocket协议传输数据
+    stompClient.connect({},function (frame) {
+        // 连接成功回调
+        console.log('Connected:' + frame);
+        // 订阅的还是个人主题
+        // /user/1/message/get
+        stompClient.subscribe("/user/"+id+"/message/get",function (response) {
+            var message = JSON.parse(response.body);
+            $("#getMessage").append('<div class="mesage"><span>发送人：'+message.fromUserId+'</span><span>消息：'+message.content+'</span>');
+            console.log(response.body);
+        })
+    });
+    // 发送消息方法，发送到后端的websocket接口
+    $("#send").click(function () {
+        var content = $("#content").val();
+        var userId = $("#userId").val();
+        console.log(content,userId,id);
+        // 通过stomp发送消息（底层使用websocket协议）
+        // /message类似于一个Controller接口，既不是endpoint，也不是topic
+        // 调用的是websocket的onMessage方法
+        stompClient.send("/message",{},JSON.stringify({
+            content:content,
+            toUserId:userId,
+            fromUserId:id
+        }));
+    });
+</script>
+</html>
